@@ -31,10 +31,12 @@ jobs:
           java -cp build/test cn.dsh.alaslock.LockLogicTest
 
       - name: 构建 APK
-        env:
-          ANDROID_JAR: ${{ env.ANDROID_SDK_ROOT || env.ANDROID_HOME }}/platforms/android-34/android.jar
-          BUILD_TOOLS: ${{ env.ANDROID_SDK_ROOT || env.ANDROID_HOME }}/build-tools/34.0.0
         run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          export ANDROID_JAR="$SDK/platforms/android-34/android.jar"
+          export BUILD_TOOLS="$SDK/build-tools/34.0.0"
+          export PATH="$BUILD_TOOLS:$PATH"
+          ls -l "$ANDROID_JAR" "$BUILD_TOOLS/aapt2"
           chmod +x build.sh
           ./build.sh
 

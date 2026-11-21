@@ -91,12 +91,15 @@ if [ ! -f "$ALOCK_KS" ]; then
     -storepass "$ALOCK_KS_PASS" -keypass "$ALOCK_KS_PASS" \
     -dname "CN=Accessibility Lock, O=alaslock, C=CN" >/dev/null 2>&1
 fi
-apksigner sign \
+APKSIGNER="$BUILD_TOOLS/apksigner"
+[ -x "$APKSIGNER" ] || APKSIGNER="apksigner"
+
+"$APKSIGNER" sign \
   --ks "$ALOCK_KS" --ks-pass "pass:$ALOCK_KS_PASS" --key-pass "pass:$ALOCK_KS_PASS" \
   --v1-signing-enabled true --v2-signing-enabled true \
   --out "$OUT/alock.apk" "$OUT/aligned.apk"
 
 echo "== 校验 =="
-apksigner verify --print-certs "$OUT/alock.apk" | head -3
+"$APKSIGNER" verify --print-certs "$OUT/alock.apk" | head -3
 "$BUILD_TOOLS/aapt2" dump badging "$OUT/alock.apk" | head -2
 ls -lh "$OUT/alock.apk"
