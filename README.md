@@ -1,6 +1,7 @@
 # 无障碍锁 · Accessibility Lock
 
 [![build](https://github.com/Abc123796/accessibility-lock/actions/workflows/build.yml/badge.svg)](https://github.com/Abc123796/accessibility-lock/actions/workflows/build.yml)
+[![release](https://img.shields.io/github/v/release/Abc123796/accessibility-lock)](https://github.com/Abc123796/accessibility-lock/releases/latest)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > 国产 ROM 会在后台把无障碍服务悄悄关掉。这个 App 每 3 秒检查一次，一关就拨回来。
@@ -35,7 +36,9 @@
 
 ## 安装
 
-1. 下载 `app-release.apk` 安装（允许「未知来源」）。
+**[⬇ 下载最新 APK](https://github.com/Abc123796/accessibility-lock/releases/latest)**（约 41 KB）
+
+1. 装上后允许「未知来源」。
 2. 打开 App，点一下要守护的服务所在那行（出现 ✓ 即选中）。
 3. 点「启动守护」。
 4. 首次会提示授权，用下面任一方式执行一次：
