@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Android SDK 组件
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK=$SDK"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+      - name: 跑核心逻辑单测
+        run: |
+          javac -encoding UTF-8 --release 11 -d build/test \
+            app/java/cn/dsh/alaslock/LockLogic.java test/LockLogicTest.java
+          java -cp build/test cn.dsh.alaslock.LockLogicTest
+
+      - name: 构建 APK
+        env:
+          ANDROID_JAR: ${{ env.ANDROID_SDK_ROOT || env.ANDROID_HOME }}/platforms/android-34/android.jar
+          BUILD_TOOLS: ${{ env.ANDROID_SDK_ROOT || env.ANDROID_HOME }}/build-tools/34.0.0
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      # 注意：CI 里用的是临时生成的签名，仅用于验证构建可跑通。
+      # 对外发布请在自己机器上用固定 key 构建，否则无法覆盖安装。
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alaslock-ci-apk
+          path: build/alock.apk
+          if-no-files-found: error

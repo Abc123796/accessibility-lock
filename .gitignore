@@ -1,0 +1,20 @@
+# 构建产物
+build/
+*.apk
+*.aab
+*.dex
+
+# 签名（绝不要提交）
+*.jks
+*.keystore
+ks.jks
+keystore.properties
+
+# 本地依赖与缓存
+android.jar
+r8.jar
+local.properties
+.gradle/
+.idea/
+*.iml
+.DS_Store

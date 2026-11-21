@@ -1,0 +1,43 @@
+name: Bug 反馈
+description: 无障碍没有被拨回、App 崩溃、状态不对
+labels: [bug]
+body:
+  - type: input
+    id: rom
+    attributes:
+      label: 机型与系统
+      description: 品牌 + ROM 版本 + Android 版本
+      placeholder: 荣耀 MagicOS 8 · Android 14
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: 被守护的服务
+      description: 哪个 App 的无障碍
+      placeholder: 自动点击器 com.zidongdianji
+    validations:
+      required: true
+  - type: dropdown
+    id: state
+    attributes:
+      label: 掉线时开关的实际状态
+      options:
+        - 开关被关掉了（显示"已关闭"）
+        - 开关看着还是开着，但服务不工作
+        - 总开关（无障碍）被关掉
+        - 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 具体现象
+      description: 掉线多久后发生、通知栏里显示什么、恢复次数有没有涨
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App 版本
+      placeholder: v1.2 (versionCode 3)
