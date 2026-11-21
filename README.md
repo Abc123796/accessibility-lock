@@ -1,6 +1,6 @@
 # 无障碍锁 · Accessibility Lock
 
-[![build](https://github.com/USER/REPO/actions/workflows/build.yml/badge.svg)](https://github.com/USER/REPO/actions/workflows/build.yml)
+[![build](https://github.com/Abc123796/accessibility-lock/actions/workflows/build.yml/badge.svg)](https://github.com/Abc123796/accessibility-lock/actions/workflows/build.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > 国产 ROM 会在后台把无障碍服务悄悄关掉。这个 App 每 3 秒检查一次，一关就拨回来。
