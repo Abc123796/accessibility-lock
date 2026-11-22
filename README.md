@@ -47,7 +47,11 @@
 adb shell pm grant cn.dsh.alaslock android.permission.WRITE_SECURE_SETTINGS
 ```
 
-没有电脑的话，用 [Shizuku](https://shizuku.rikka.app/) 的终端执行同一行（去掉开头的 `adb shell`）。
+**没有电脑也行**：装了 [Shizuku](https://shizuku.rikka.app/) 的话，打开 App 点「用 Shizuku 一键授权」，
+在 Shizuku 弹窗里点允许，它会以 shell 身份替你执行上面那条 `pm grant`（不需要 root，也不需要输入命令）。
+
+> 实现在 `ShizukuShell.java`：通过 `ShizukuBinderWrapper` 调 Shizuku 的 `IShizukuService.newProcess`，
+> AIDL 放在 `third_party/shizuku/aidl`，只声明 `checkPermission(4)` 和 `newProcess(7)` 两个事务。
 
 5. 点「申请电池白名单」，并在系统设置里再给本 App 开自启动 / 后台无限制。
 
@@ -61,6 +65,7 @@ adb shell pm grant cn.dsh.alaslock android.permission.WRITE_SECURE_SETTINGS
 | 服务列表 | 点整行切换是否守护 |
 | 强制保护 | 默认开。手动在设置里关掉无障碍也会被拨回；关掉后只在服务被移出列表时补 |
 | 强制重连 | 专治「开关开着但服务死了」：把服务摘下来 1.5 秒再挂回去，逼系统重新绑定 |
+| 用 Shizuku 一键授权 | 有 Shizuku 时出现，点一下即可拿到 WRITE_SECURE_SETTINGS |
 | 恢复次数 | 累计自动拨回多少次 |
 
 通知栏常驻一条低优先级通知，上面有「暂停」可以直接停掉守护。

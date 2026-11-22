@@ -61,21 +61,38 @@ echo "== 2/6 链接清单与资源 =="
   --version-name "$VER_NAME" \
   --auto-add-overlay
 
+echo "== 2.5/6 Shizuku 依赖 + AIDL =="
+DEPS="$OUT/deps"
+mkdir -p "$DEPS"
+SZ_VER=13.1.5
+for mod in api provider; do
+  if [ ! -f "$DEPS/$mod.jar" ]; then
+    curl -sSL --max-time 180 -o "$DEPS/$mod.aar" \
+      "https://repo1.maven.org/maven2/dev/rikka/shizuku/$mod/$SZ_VER/$mod-$SZ_VER.aar"
+    (cd "$DEPS" && unzip -o -q "$mod.aar" classes.jar && mv -f classes.jar "$mod.jar" && rm -f "$mod.aar")
+  fi
+done
+mkdir -p "$OUT/gen/aidl"
+for f in $(find "$ROOT/third_party/shizuku/aidl" -name '*.aidl'); do
+  # 注意：aidl 的 -o 是指目录，且一次只喂一个文件，否则会把下一个输入当成输出覆盖掉
+  "$BUILD_TOOLS/aidl" -I "$ROOT/third_party/shizuku/aidl" -o "$OUT/gen/aidl" "$f"
+done
+
 echo "== 3/6 编译 Java =="
 javac -encoding UTF-8 --release 11 \
-  -classpath "$ANDROID_JAR" \
+  -classpath "$ANDROID_JAR:$DEPS/api.jar:$DEPS/provider.jar" \
   -d "$OUT/classes" \
   $(find "$APP/java" "$OUT/gen" -name '*.java')
 
 echo "== 4/6 转 dex =="
 if [ -x "$BUILD_TOOLS/d8" ]; then
   "$BUILD_TOOLS/d8" --release --min-api 24 --lib "$ANDROID_JAR" \
-    --output "$OUT/dex" $(find "$OUT/classes" -name '*.class')
+    --output "$OUT/dex" "$DEPS/api.jar" "$DEPS/provider.jar" $(find "$OUT/classes" -name '*.class')
 else
   R8="${R8_JAR:-$ROOT/r8.jar}"
   [ -f "$R8" ] || { echo "没有 d8，也没有 r8.jar（可用 R8_JAR 指定）" >&2; exit 1; }
   java -cp "$R8" com.android.tools.r8.D8 --release --min-api 24 --lib "$ANDROID_JAR" \
-    --output "$OUT/dex" $(find "$OUT/classes" -name '*.class')
+    --output "$OUT/dex" "$DEPS/api.jar" "$DEPS/provider.jar" $(find "$OUT/classes" -name '*.class')
 fi
 
 echo "== 5/6 打包并对齐 =="

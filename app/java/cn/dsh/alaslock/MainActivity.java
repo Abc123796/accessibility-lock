@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
         }
         build();
+        listenShizuku();
         fillList();
         refresh();
         askNotif();
@@ -139,6 +140,11 @@ public class MainActivity extends Activity {
         // 次级操作
         link(root, "强制重连  ·  开关没关但服务死了", this::forceRebind);
         link(root, "申请电池白名单  ·  别让系统杀它", this::askBattery);
+        if (ShizukuShell.available()) {
+            link(root, ShizukuShell.granted()
+                    ? "Shizuku 已就绪 · 点此重新授权"
+                    : "用 Shizuku 一键授权（不用电脑）", this::shizukuGrant);
+        }
         link(root, "复制 ADB 授权命令", this::copyCmd);
         link(root, "打开系统无障碍设置", this::openA11ySettings);
 
@@ -410,6 +416,43 @@ public class MainActivity extends Activity {
                 toast("请手动到 设置→电池 设成「无限制」");
             }
         }
+    }
+
+    private void listenShizuku() {
+        try {
+            rikka.shizuku.Shizuku.addRequestPermissionResultListener((req, res) -> runOnUiThread(() -> {
+                if (req != ShizukuShell.REQ) {
+                    return;
+                }
+                if (res == PackageManager.PERMISSION_GRANTED) {
+                    shizukuGrant();
+                } else {
+                    toast("Shizuku 里点了拒绝");
+                }
+            }));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** 借 Shizuku 的 shell 身份执行一次 pm grant */
+    private void shizukuGrant() {
+        if (!ShizukuShell.available()) {
+            toast("没检测到 Shizuku 服务");
+            return;
+        }
+        if (!ShizukuShell.granted()) {
+            ShizukuShell.request();
+            toast("在 Shizuku 弹窗里点「允许」");
+            return;
+        }
+        toast("正在用 Shizuku 授权…");
+        new Thread(() -> {
+            boolean ok = ShizukuShell.grantSelf();
+            runOnUiThread(() -> {
+                toast(ok ? "授权成功" : "失败，改用下面的 ADB 命令");
+                refresh();
+            });
+        }, "shizuku-grant").start();
     }
 
     private void copyCmd() {
