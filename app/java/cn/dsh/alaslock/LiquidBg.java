@@ -1,20 +1,24 @@
 package cn.dsh.alaslock;
 
 import android.content.Context;
-import android.graphics.BlurMaskFilter;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.os.SystemClock;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
 
-/** 背景：三团缓慢漂移的柔光，营造"液态"感。 */
+/**
+ * 背景：三团柔光。
+ * 关键：只画一次到 Bitmap，之后每帧只 drawBitmap。
+ * 早期版本用 BlurMaskFilter + 软件层每帧重绘，等于每帧模糊三张全屏图，卡到不能用。
+ */
 public class LiquidBg extends View {
 
-    private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private long t0 = 0L;
-    private long last = 0L;
-    private boolean animate = true;
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Bitmap cache;
 
     public LiquidBg(Context c) {
         this(c, null);
@@ -22,59 +26,64 @@ public class LiquidBg extends View {
 
     public LiquidBg(Context c, AttributeSet a) {
         super(c, a);
-        p.setMaskFilter(new BlurMaskFilter(Liquid.dp(c, 72), BlurMaskFilter.Blur.NORMAL));
-        animate = !Liquid.reduceMotion(c);
-        setLayerType(LAYER_TYPE_SOFTWARE, null);
     }
 
     @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        t0 = SystemClock.uptimeMillis();
-        last = 0L;
+    protected void onSizeChanged(int w, int h, int ow, int oh) {
+        super.onSizeChanged(w, h, ow, oh);
+        recycle();
+        if (w > 0 && h > 0) {
+            cache = render(w, h);
+        }
+    }
+
+    private Bitmap render(int w, int h) {
+        Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas cv = new Canvas(bm);
+
+        // 底色渐变
+        paint.setShader(new LinearGradient(0, 0, 0, h,
+                new int[]{0xFF080B11, 0xFF0D1219, 0xFF0A0E14},
+                new float[]{0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+        cv.drawRect(0, 0, w, h, paint);
+
+        float base = Math.min(w, h);
+        blob(cv, w * 0.18f, h * 0.14f, base * 0.60f, Liquid.ACCENT, 0x30);
+        blob(cv, w * 0.84f, h * 0.26f, base * 0.52f, Liquid.TEAL, 0x24);
+        blob(cv, w * 0.55f, h * 0.95f, base * 0.66f, Liquid.VIOLET, 0x20);
+        return bm;
+    }
+
+    /** 用径向渐变做柔光：GPU 友好，不需要模糊滤镜 */
+    private void blob(Canvas cv, float x, float y, float r, int color, int alpha) {
+        int c0 = (alpha << 24) | (color & 0xFFFFFF);
+        int c1 = (alpha / 3 << 24) | (color & 0xFFFFFF);
+        paint.setShader(new RadialGradient(x, y, r,
+                new int[]{c0, c1, 0x00000000},
+                new float[]{0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+        cv.drawCircle(x, y, r, paint);
+        paint.setShader(null);
     }
 
     @Override
     protected void onDraw(Canvas cv) {
-        cv.drawColor(Liquid.BG);
-        long now = SystemClock.uptimeMillis();
-        if (t0 == 0L) {
-            t0 = now;
-        }
-        float t = (now - t0) / 1000f;
-
-        int w = getWidth(), h = getHeight();
-        if (w == 0 || h == 0) {
-            return;
-        }
-        float base = Math.min(w, h);
-
-        draw(cv, w * (0.20f + 0.05f * (float) Math.sin(t * 0.23f)),
-                h * (0.16f + 0.04f * (float) Math.cos(t * 0.19f)),
-                base * 0.52f, Liquid.ACCENT, 0x26);
-        draw(cv, w * (0.82f + 0.04f * (float) Math.cos(t * 0.17f + 1.7f)),
-                h * (0.30f + 0.05f * (float) Math.sin(t * 0.21f + 1.1f)),
-                base * 0.46f, Liquid.TEAL, 0x1E);
-        draw(cv, w * (0.55f + 0.06f * (float) Math.sin(t * 0.13f + 3.1f)),
-                h * (0.92f + 0.03f * (float) Math.cos(t * 0.16f + 2.2f)),
-                base * 0.58f, Liquid.VIOLET, 0x1C);
-
-        if (animate && now - last > 66) {
-            last = now;
-            postInvalidateOnAnimation();
+        if (cache != null && !cache.isRecycled()) {
+            cv.drawBitmap(cache, 0, 0, null);
+        } else {
+            cv.drawColor(Liquid.BG);
         }
     }
 
-    private void draw(Canvas cv, float x, float y, float r, int color, int alpha) {
-        p.setShader(null);
-        p.setColor((alpha << 24) | (color & 0xFFFFFF));
-        p.setAlpha(alpha);
-        cv.drawCircle(x, y, r, p);
+    private void recycle() {
+        if (cache != null && !cache.isRecycled()) {
+            cache.recycle();
+        }
+        cache = null;
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        animate = false;
+        recycle();
         super.onDetachedFromWindow();
     }
 }

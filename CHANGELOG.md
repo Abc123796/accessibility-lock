@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.3 — 2026-11-22
+
+- 修复液态背景卡顿：柔光改为一次性渲染进 Bitmap，运行时只贴图
+  （旧实现用 BlurMaskFilter + 软件层每帧重绘，中端机直接卡死）
+- 暂时移除 Shizuku provider：它在启动阶段向 Shizuku 兼容层（如 Shevery）取 binder 失败会崩在
+  ContentProvider.onCreate，导致 v1.3 / v1.3.1 一启动就闪退
+- Shizuku 授权将改为按需初始化后再回归
+
 ## v1.3 — 2026-11-22
 
 - 液态视觉：背景三团柔光缓慢漂移（15fps，省电优先）

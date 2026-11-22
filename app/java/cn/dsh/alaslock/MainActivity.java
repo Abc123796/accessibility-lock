@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        CrashLog.install(this);
         getWindow().setBackgroundDrawable(new ColorDrawable(Liquid.BG));
         try {
             getWindow().setStatusBarColor(Liquid.BG);
