@@ -23,9 +23,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,16 +49,16 @@ public class MainActivity extends Activity {
     private TextView vBattery;
     private TextView vFixes;
     private LinearLayout listBox;
-    private TextView primary;
+    private LiquidButton primary;
     private EditText manual;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        getWindow().setBackgroundDrawable(new ColorDrawable(Ui.BG));
+        getWindow().setBackgroundDrawable(new ColorDrawable(Liquid.BG));
         try {
-            getWindow().setStatusBarColor(Ui.BG);
-            getWindow().setNavigationBarColor(Ui.BG);
+            getWindow().setStatusBarColor(Liquid.BG);
+            getWindow().setNavigationBarColor(Liquid.BG);
         } catch (Throwable ignored) {
         }
         build();
@@ -80,8 +80,10 @@ public class MainActivity extends Activity {
     // ---------------------------------------------------------------- 界面
 
     private void build() {
+        FrameLayout frame = new FrameLayout(this);
+        frame.addView(new LiquidBg(this), new FrameLayout.LayoutParams(MATCH, MATCH));
+
         ScrollView sv = new ScrollView(this);
-        sv.setBackgroundColor(Ui.BG);
         sv.setFillViewport(true);
 
         LinearLayout root = Ui.col(this);
@@ -98,7 +100,7 @@ public class MainActivity extends Activity {
 
         // 状态卡
         LinearLayout card = Ui.col(this);
-        card.setBackground(Ui.roundStroke(this, Ui.CARD, Ui.STROKE, 18, 1));
+        card.setBackground(Ui.roundStroke(this, Liquid.GLASS, Liquid.GLASS_STROKE, 20, 1));
         card.setPadding(dp(6), dp(6), dp(6), dp(6));
         root.addView(card, Ui.lpm(this, MATCH, WRAP, 18));
 
@@ -113,9 +115,9 @@ public class MainActivity extends Activity {
         strictTexts.addView(Ui.tv(this, "强制保护", 14, Ui.TEXT, false));
         strictTexts.addView(Ui.tv(this, "手动关掉也拨回", 11, Ui.MUTED, false));
         strictRow.addView(strictTexts, Ui.weight(0));
-        Switch strictSwitch = new Switch(this);
-        strictSwitch.setChecked(Prefs.strict(this));
-        strictSwitch.setOnCheckedChangeListener((btn, checked) -> {
+        LiquidToggle strictSwitch = new LiquidToggle(this);
+        strictSwitch.setChecked(Prefs.strict(this), false);
+        strictSwitch.setOnChanged(checked -> {
             Prefs.setStrict(this, checked);
             refresh();
         });
@@ -129,12 +131,10 @@ public class MainActivity extends Activity {
         root.addView(listBox, Ui.lpm(this, MATCH, WRAP, 6));
 
         // 主按钮
-        primary = Ui.tv(this, "启动守护", 16, Ui.BG, true);
-        primary.setGravity(Gravity.CENTER);
-        primary.setPadding(0, dp(15), 0, dp(15));
-        primary.setClickable(true);
+        primary = new LiquidButton(this);
+        primary.setLabel("启动守护");
         primary.setOnClickListener(v -> onPrimary());
-        root.addView(primary, Ui.lpm(this, MATCH, WRAP, 22));
+        root.addView(primary, Ui.lpm(this, MATCH, dp(56), 24));
 
         // 次级操作
         link(root, "强制重连  ·  开关没关但服务死了", this::forceRebind);
@@ -155,7 +155,8 @@ public class MainActivity extends Activity {
         manual.setInputType(InputType.TYPE_CLASS_TEXT);
         root.addView(manual, Ui.lpm(this, MATCH, WRAP, 8));
 
-        setContentView(sv);
+        frame.addView(sv, new FrameLayout.LayoutParams(MATCH, MATCH));
+        setContentView(frame);
     }
 
     private View spacer(float h) {
@@ -177,7 +178,7 @@ public class MainActivity extends Activity {
 
     private void link(LinearLayout parent, String text, Runnable action) {
         TextView t = Ui.tv(this, text, 13, Ui.MUTED, false);
-        t.setBackground(Ui.round(this, Ui.CARD, 12));
+        t.setBackground(Ui.roundStroke(this, Liquid.GLASS, Liquid.GLASS_STROKE, 14, 1f));
         t.setPadding(dp(14), dp(13), dp(14), dp(13));
         t.setClickable(true);
         t.setOnClickListener(v -> action.run());
@@ -254,8 +255,8 @@ public class MainActivity extends Activity {
 
         LinearLayout row = Ui.row(this);
         row.setBackground(checked
-                ? Ui.roundStroke(this, Ui.CARD_HI, Ui.ACCENT, 14, 1)
-                : Ui.round(this, Ui.CARD, 14));
+                ? Ui.roundStroke(this, Liquid.GLASS_HI, Liquid.ACCENT, 16, 1.2f)
+                : Ui.roundStroke(this, Liquid.GLASS, Liquid.GLASS_STROKE, 16, 1f));
         row.setPadding(dp(14), dp(12), dp(14), dp(12));
         row.setClickable(true);
         row.setOnClickListener(v -> toggle(flat));
@@ -334,15 +335,8 @@ public class MainActivity extends Activity {
         vFixes.setText(Prefs.fixes(this) + " 次");
         vFixes.setTextColor(Ui.TEXT);
 
-        if (running) {
-            primary.setText("停止守护");
-            primary.setTextColor(Ui.BAD);
-            primary.setBackground(Ui.roundStroke(this, Ui.CARD, Ui.BAD, 16, 1));
-        } else {
-            primary.setText("启动守护");
-            primary.setTextColor(Ui.BG);
-            primary.setBackground(Ui.round(this, Ui.ACCENT, 16));
-        }
+        primary.setLabel(running ? "停止守护" : "启动守护");
+        primary.setDanger(running);
     }
 
     private void onPrimary() {
