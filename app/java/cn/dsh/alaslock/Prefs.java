@@ -43,6 +43,40 @@ final class Prefs {
         sp(c).edit().putBoolean("strict", v).apply();
     }
 
+    /** 自动重连：开关看着开着、其实服务已经死了时，自动摘下来再挂回去 */
+    static boolean autoRebind(Context c) {
+        return sp(c).getBoolean("autoRebind", true);
+    }
+
+    static void setAutoRebind(Context c, boolean v) {
+        sp(c).edit().putBoolean("autoRebind", v).apply();
+    }
+
+    static int rebinds(Context c) {
+        return sp(c).getInt("rebinds", 0);
+    }
+
+    static int bumpRebind(Context c) {
+        int n = rebinds(c) + 1;
+        sp(c).edit().putInt("rebinds", n).apply();
+        return n;
+    }
+
+    static void log(Context c, String line) {
+        String ts = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US)
+                .format(new java.util.Date());
+        String old = sp(c).getString("log", "");
+        String s = ts + "  " + line + "\n" + old;
+        if (s.length() > 4000) {
+            s = s.substring(0, 4000);
+        }
+        sp(c).edit().putString("log", s).apply();
+    }
+
+    static String logText(Context c) {
+        return sp(c).getString("log", "");
+    }
+
     static int fixes(Context c) {
         return sp(c).getInt("fixes", 0);
     }

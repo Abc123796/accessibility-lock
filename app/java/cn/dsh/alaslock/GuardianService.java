@@ -29,6 +29,9 @@ public class GuardianService extends Service {
     private boolean reportedIgnored = false;
     private boolean warned = false;
     private boolean forcePending = false;
+    private int deadHits = 0;
+    private long lastRebindAt = 0L;
+    private static final long REBIND_COOLDOWN_MS = 60_000L;
     private String lastText = "";
 
     private final Runnable verifyRunnable = new Runnable() {
@@ -140,7 +143,7 @@ public class GuardianService extends Service {
             if (!accOn) {
                 update("总开关被关（非强制模式，不拨回）");
             } else {
-                update("正常 · 守护 " + targets.size() + " 个服务");
+                checkAlive(targets);
             }
             return;
         }
@@ -169,6 +172,67 @@ public class GuardianService extends Service {
             scheduleVerify();
         } catch (Throwable t) {
             Log.w("ALock", "write secure settings failed", t);
+        }
+    }
+
+    /**
+     * 开关看着是开的，服务可能已经死了。
+     * 用系统实际绑定列表比对，连续两次都缺才动手，并加 60 秒冷却，
+     * 避免「每 3 秒无脑重连」把目标 App 反复杀一遍。
+     */
+    private void checkAlive(java.util.Set<String> targets) {
+        String ok = "正常 · 守护 " + targets.size() + " 个服务";
+        if (!Prefs.autoRebind(this)) {
+            update(ok);
+            return;
+        }
+        java.util.Set<String> bound = boundServices();
+        if (bound == null) {
+            update(ok);          // 系统不告诉我们，就当正常，不瞎拨
+            return;
+        }
+        if (bound.containsAll(targets)) {
+            deadHits = 0;
+            update(ok);
+            return;
+        }
+        deadHits++;
+        if (deadHits < 2) {
+            update("疑似假死 · 观察中");
+            return;
+        }
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - lastRebindAt < REBIND_COOLDOWN_MS) {
+            update("疑似假死 · 冷却中");
+            return;
+        }
+        autoRebind(targets);
+    }
+
+    private void autoRebind(java.util.Set<String> targets) {
+        lastRebindAt = android.os.SystemClock.elapsedRealtime();
+        deadHits = 0;
+        String cur = Settings.Secure.getString(getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        try {
+            forcePending = true;
+            Settings.Secure.putString(getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                    LockLogic.withoutTargets(cur, targets));
+            int n = Prefs.bumpRebind(this);
+            Prefs.log(this, "自动重连 #" + n + "（开关开着但服务没绑上）");
+            Log.i("ALock", "auto rebind #" + n);
+            update("自动重连 · 第 " + n + " 次");
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    forcePending = false;
+                    repair();
+                }
+            }, 1500L);
+        } catch (Throwable t) {
+            forcePending = false;
+            Log.w("ALock", "auto rebind failed", t);
         }
     }
 

@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     private TextView vGuard;
     private TextView vBattery;
     private TextView vFixes;
+    private TextView vRebind;
     private LinearLayout listBox;
     private LiquidButton primary;
     private EditText manual;
@@ -110,6 +111,7 @@ public class MainActivity extends Activity {
         vGuard = statRow(card, "守护");
         vBattery = statRow(card, "电池");
         vFixes = statRow(card, "恢复");
+        vRebind = statRow(card, "重连");
 
         LinearLayout strictRow = Ui.row(this);
         strictRow.setPadding(dp(12), dp(12), dp(8), dp(12));
@@ -125,6 +127,21 @@ public class MainActivity extends Activity {
         });
         strictRow.addView(strictSwitch);
         card.addView(strictRow);
+
+        LinearLayout rebindRow = Ui.row(this);
+        rebindRow.setPadding(dp(12), dp(12), dp(8), dp(12));
+        LinearLayout rebindTexts = Ui.col(this);
+        rebindTexts.addView(Ui.tv(this, "自动重连", 14, Ui.TEXT, false));
+        rebindTexts.addView(Ui.tv(this, "开关开着但服务死了，自动摘挂一次", 11, Ui.MUTED, false));
+        rebindRow.addView(rebindTexts, Ui.weight(0));
+        LiquidToggle rebindSwitch = new LiquidToggle(this);
+        rebindSwitch.setChecked(Prefs.autoRebind(this), false);
+        rebindSwitch.setOnChanged(checked -> {
+            Prefs.setAutoRebind(this, checked);
+            refresh();
+        });
+        rebindRow.addView(rebindSwitch);
+        card.addView(rebindRow);
 
         // 服务列表
         TextView sec = Ui.tv(this, "要守护的服务", 14, Ui.MUTED, true);
@@ -146,6 +163,7 @@ public class MainActivity extends Activity {
                     ? "Shizuku 已就绪 · 点此重新授权"
                     : "用 Shizuku 一键授权（不用电脑）", this::shizukuGrant);
         }
+        link(root, "查看重连记录", this::showLog);
         link(root, "复制 ADB 授权命令", this::copyCmd);
         link(root, "打开系统无障碍设置", this::openA11ySettings);
 
@@ -342,6 +360,9 @@ public class MainActivity extends Activity {
         vFixes.setText(Prefs.fixes(this) + " 次");
         vFixes.setTextColor(Ui.TEXT);
 
+        vRebind.setText(Prefs.rebinds(this) + " 次");
+        vRebind.setTextColor(Prefs.rebinds(this) > 0 ? Ui.WARN : Ui.TEXT);
+
         primary.setLabel(running ? "停止守护" : "启动守护");
         primary.setDanger(running);
     }
@@ -393,6 +414,7 @@ public class MainActivity extends Activity {
             } else {
                 startService(i);
             }
+            Prefs.log(this, "手动重连");
             toast("已发送重连请求");
         } catch (Throwable t) {
             toast("发送失败：" + t.getClass().getSimpleName());
@@ -454,6 +476,18 @@ public class MainActivity extends Activity {
                 refresh();
             });
         }, "shizuku-grant").start();
+    }
+
+    private void showLog() {
+        String log = Prefs.logText(this);
+        if (log == null || log.trim().isEmpty()) {
+            log = "还没有记录。触发过自动/手动重连后会写在这里。";
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("重连记录")
+                .setMessage(log)
+                .setPositiveButton("好", null)
+                .show();
     }
 
     private void copyCmd() {
