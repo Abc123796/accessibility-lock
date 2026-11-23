@@ -143,6 +143,22 @@ public class MainActivity extends Activity {
         rebindRow.addView(rebindSwitch);
         card.addView(rebindRow);
 
+        LinearLayout bootRow = Ui.row(this);
+        bootRow.setPadding(dp(12), dp(12), dp(8), dp(12));
+        LinearLayout bootTexts = Ui.col(this);
+        bootTexts.addView(Ui.tv(this, "开机自启动", 14, Ui.TEXT, false));
+        bootTexts.addView(Ui.tv(this, "开机后自动恢复守护，可关掉", 11, Ui.MUTED, false));
+        bootRow.addView(bootTexts, Ui.weight(0));
+        LiquidToggle bootSwitch = new LiquidToggle(this);
+        bootSwitch.setChecked(Prefs.bootStart(this), false);
+        bootSwitch.setOnChanged(checked -> {
+            Prefs.setBootStart(this, checked);
+            toast(checked ? "开机后会自启动" : "开机后不再自启动");
+            refresh();
+        });
+        bootRow.addView(bootSwitch);
+        card.addView(bootRow);
+
         // 服务列表
         TextView sec = Ui.tv(this, "要守护的服务", 14, Ui.MUTED, true);
         root.addView(sec, Ui.lpm(this, MATCH, WRAP, 24));

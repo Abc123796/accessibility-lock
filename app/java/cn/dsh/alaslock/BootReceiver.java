@@ -8,9 +8,10 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context c, Intent i) {
-        if (Prefs.isEnabled(c)) {
-            Prefs.ensureJob(c);
-            Prefs.startGuardian(c);
+        if (!Prefs.isEnabled(c) || !Prefs.bootStart(c)) {
+            return;
         }
+        Prefs.ensureJob(c);
+        Prefs.startGuardian(c);
     }
 }

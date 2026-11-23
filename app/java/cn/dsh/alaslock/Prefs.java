@@ -52,6 +52,15 @@ final class Prefs {
         sp(c).edit().putBoolean("autoRebind", v).apply();
     }
 
+    /** 开机自启动（可选，默认开） */
+    static boolean bootStart(Context c) {
+        return sp(c).getBoolean("bootStart", true);
+    }
+
+    static void setBootStart(Context c, boolean v) {
+        sp(c).edit().putBoolean("bootStart", v).apply();
+    }
+
     static int rebinds(Context c) {
         return sp(c).getInt("rebinds", 0);
     }

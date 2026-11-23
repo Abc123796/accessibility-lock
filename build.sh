@@ -16,8 +16,8 @@ OUT="$ROOT/build"
 SDK_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/lib/android-sdk}}"
 
 # 版本号（每次发布改这里）
-VER_CODE="${VER_CODE:-8}"
-VER_NAME="${VER_NAME:-1.4.0}"
+VER_CODE="${VER_CODE:-9}"
+VER_NAME="${VER_NAME:-1.4.1}"
 
 if [ -z "${ANDROID_JAR:-}" ]; then
   for p in "$SDK_HOME/platforms/android-34/android.jar" \
